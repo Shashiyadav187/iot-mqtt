@@ -1,2 +1,2 @@
 # iot-mqtt
-MQTT-based Internet of Things Home automation system.
+Node.js & MQTT-based Internet of Things Home automation system.
