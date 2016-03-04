@@ -15,7 +15,7 @@ $(document).ready(function(){
 		 //Using the HiveMQ public Broker, with a random client Id
 		 client = new Paho.MQTT.Client(host, parseInt(port), id_client);
 
-		 //Gets  called if the websocket/mqtt connection gets disconnected for any reason
+		 //Gets called if the websocket/mqtt connection gets disconnected for any reason
 		 client.onConnectionLost = function (responseObject) {
 			 //Depending on your scenario you could implement a reconnect logic here
 			 alert("connection lost: " + responseObject.errorMessage);
