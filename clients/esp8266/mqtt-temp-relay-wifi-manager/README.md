@@ -8,10 +8,10 @@ Broker and Wifi Credentials configurable via access point and captive portal (th
 # Used PINs:
 
     // DHT Sensor
-    int dhtPin = ; //
+    #define DHTPIN D4
 
     // Relay pin
-    int relayPin = 4; // pin D2
+    const int relayPin = D1;
 
 ### Possible Improvements:
 
