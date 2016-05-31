@@ -57,7 +57,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   // Switch on the relay if an 1 was received as first character on the water/ topic
-  if (topic == "water/")
+  if (topic == "plant/water/")
     if ((char)payload[0] == '1') {
       digitalWrite(relayPin, LOW);   // Turn the Relay on
       delay(wateringTime);
