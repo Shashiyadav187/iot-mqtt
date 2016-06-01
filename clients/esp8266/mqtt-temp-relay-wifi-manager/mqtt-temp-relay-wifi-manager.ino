@@ -57,14 +57,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   // Switch on the relay if an 1 was received as first character on the water/ topic
-  if (topic == "plant/water/")
+  if (strcmp(topic, "plant/pump") == 0){
+    Serial.println("Topic recognized");
     if ((char)payload[0] == '1') {
-      digitalWrite(relayPin, LOW);   // Turn the Relay on
-      delay(wateringTime);
+      Serial.println("Pump ON/OFF");
+      client.publish("plant/pump/status", "ON");
       digitalWrite(relayPin, HIGH);   // Turn the Relay on
+      delay(wateringTime);
+      digitalWrite(relayPin, LOW);   // Turn the Relay off
+      client.publish("plant/pump/status", "OFF");
     } else {
-      digitalWrite(relayPin, HIGH);  // Turn the LED off by making the voltage HIGH (?)
+      Serial.println("Pump OFF");
+      digitalWrite(relayPin, LOW);  // Turn the Relay off
+      client.publish("plant/pump/status", "OFF");
     }
+
+  }
 
 }
 
@@ -213,7 +221,7 @@ void reconnect() {
       // Once connected, publish an announcement... (if not authorized to publish the connection is closed)
       client.publish("all", (String("hello from ")+username).c_str());
       // ... and resubscribe
-      client.subscribe("plant/water/");
+      client.subscribe("plant/pump");
       client.subscribe((String("sensors/")+username+String("/")).c_str());
     } else {
       Serial.print("failed, rc=");
