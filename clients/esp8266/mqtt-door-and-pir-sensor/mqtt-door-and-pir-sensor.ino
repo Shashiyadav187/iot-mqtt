@@ -52,7 +52,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   // Switch on the LED if an 1 was received as first character on the led/ topic
-  if (topic == "led/")
+  if (strcmp(topic, "led/") == 0)
     if ((char)payload[0] == '1') {
       digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
       // but actually the LED is on; this is because
@@ -66,12 +66,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 // PIR SENSOR VARS
 //the time we give the sensor to calibrate (10-60 secs according to the datasheet)
-int calibrationTime = 30;        
+int calibrationTime = 30;
 //the time when the sensor outputs a low impulse
-long unsigned int lowIn;         
-//the amount of milliseconds the sensor has to be low 
+long unsigned int lowIn;
+//the amount of milliseconds the sensor has to be low
 //before we assume all motion has stopped
-long unsigned int pause = 5000;  
+long unsigned int pause = 5000;
 boolean lockLow = true;
 boolean takeLowTime;
 
@@ -141,7 +141,7 @@ void setup() {
 
   //set static ip
   //wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
-  
+
   //add all your parameters here
   wifiManager.addParameter(&custom_mqtt_server);
   wifiManager.addParameter(&custom_mqtt_port);
@@ -150,11 +150,11 @@ void setup() {
 
   //reset settings
   //wifiManager.resetSettings();
-  
+
   //set minimu quality of signal so it ignores AP's under that quality
   //defaults to 8%
   //wifiManager.setMinimumSignalQuality();
-  
+
   //sets timeout until configuration portal gets turned off
   //useful to make it all retry or go to sleep
   //in seconds
@@ -243,16 +243,16 @@ void reconnect() {
 void PirDetection(){
      if(digitalRead(pirPin) == HIGH){
 
-       if(lockLow){  
+       if(lockLow){
          //makes sure we wait for a transition to LOW before any further output is made:
-         lockLow = false;            
+         lockLow = false;
          Serial.println("---");
          Serial.print("motion detected at ");
          Serial.print(millis()/1000);
-         Serial.println(" sec"); 
+         Serial.println(" sec");
          client.publish("alarm/", "{\"sensor\": \"pir\"}"); // MQTT publish alert
          delay(50);
-         }         
+         }
          takeLowTime = true;
        }
 
@@ -262,12 +262,12 @@ void PirDetection(){
         lowIn = millis();          //save the time of the transition from high to LOW
         takeLowTime = false;       //make sure this is only done at the start of a LOW phase
         }
-       //if the sensor is low for more than the given pause, 
+       //if the sensor is low for more than the given pause,
        //we assume that no more motion is going to happen
-       if(!lockLow && millis() - lowIn > pause){  
-           //makes sure this block of code is only executed again after 
+       if(!lockLow && millis() - lowIn > pause){
+           //makes sure this block of code is only executed again after
            //a new motion sequence has been detected
-           lockLow = true;                        
+           lockLow = true;
            Serial.print("motion ended at ");      //output
            Serial.print((millis() - pause)/1000);
            Serial.println(" sec");
@@ -278,7 +278,7 @@ void PirDetection(){
 
 bool doorWasOpen = false;
 void DoorDetection(){
-  
+
   // if door isn't open, we don't need to send anything
   if(digitalRead(doorPin) == HIGH) {
     // the door is open
