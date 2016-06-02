@@ -10,18 +10,23 @@
 #include <PubSubClient.h>         //https://github.com/knolleary/pubsubclient
 
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
+#include "DHT.h"
 
+// DHT11 Sensor
+#define DHTPIN D4     // what pin we're connected to
+#define DHTTYPE DHT11   // DHT 11
+DHT dht(DHTPIN, DHTTYPE);
 
-// PIR Sensor
-int pirPin = 5; // pin D1
-
-// DOOR Magnetic Sensor
-int doorPin = 4; // pin D2
+// Relay Pin
+const int relayPin = D1;
+long wateringTime = 4000;
 
 // MQTT settings
 WiFiClient espClient;
 PubSubClient client(espClient);
 long lastMsg = 0;
+char msg[128];
+long interval = 30000;     // interval at which to send mqtt messages (milliseconds)
 
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[40] = "192.168.1.111";
@@ -30,7 +35,7 @@ char username[34] = "default";
 char password[34] = "default";
 const char* willTopic = "graveyard/";
 
-const char* apName = "ESP8266-Sensor-AP";
+const char* apName = "ESP8266-Plant-AP";
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -51,33 +56,29 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  // Switch on the LED if an 1 was received as first character on the led/ topic
-  if (strcmp(topic, "led/") == 0)
+  // Switch on the relay if an 1 was received as first character on the water/ topic
+  if (strcmp(topic, "plant/pump") == 0){
+    Serial.println("Topic recognized");
     if ((char)payload[0] == '1') {
-      digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-      // but actually the LED is on; this is because
-      // it is acive low on the ESP-01)
+      Serial.println("Pump ON/OFF");
+      client.publish("plant/pump/status", "ON");
+      digitalWrite(relayPin, HIGH);   // Turn the Relay on
+      delay(wateringTime);
+      digitalWrite(relayPin, LOW);   // Turn the Relay off
+      client.publish("plant/pump/status", "OFF");
     } else {
-      digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+      Serial.println("Pump OFF");
+      digitalWrite(relayPin, LOW);  // Turn the Relay off
+      client.publish("plant/pump/status", "OFF");
     }
 
+  }
 
 }
 
-// PIR SENSOR VARS
-//the time we give the sensor to calibrate (10-60 secs according to the datasheet)
-int calibrationTime = 30;
-//the time when the sensor outputs a low impulse
-long unsigned int lowIn;
-//the amount of milliseconds the sensor has to be low
-//before we assume all motion has stopped
-long unsigned int pause = 5000;
-boolean lockLow = true;
-boolean takeLowTime;
-
 
 void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  pinMode(relayPin, OUTPUT);     // Initialize the relayPin as an output
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println();
@@ -122,8 +123,6 @@ void setup() {
   }
   //end read
 
-
-
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
   // id/name placeholder/prompt default length
@@ -141,7 +140,7 @@ void setup() {
 
   //set static ip
   //wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
-
+  
   //add all your parameters here
   wifiManager.addParameter(&custom_mqtt_server);
   wifiManager.addParameter(&custom_mqtt_port);
@@ -150,11 +149,11 @@ void setup() {
 
   //reset settings
   //wifiManager.resetSettings();
-
+  
   //set minimu quality of signal so it ignores AP's under that quality
   //defaults to 8%
   //wifiManager.setMinimumSignalQuality();
-
+  
   //sets timeout until configuration portal gets turned off
   //useful to make it all retry or go to sleep
   //in seconds
@@ -209,11 +208,6 @@ void setup() {
   client.setServer(mqtt_server, atoi(mqtt_port)); // parseInt to the port
   client.setCallback(callback);
 
-  /* Sensors setup */
-  pinMode(pirPin, INPUT_PULLUP); // Pir Sensor
-  pinMode(doorPin, INPUT_PULLUP); // Magnetic Door Sensor
-
-
 }
 
 
@@ -227,8 +221,7 @@ void reconnect() {
       // Once connected, publish an announcement... (if not authorized to publish the connection is closed)
       client.publish("all", (String("hello from ")+username).c_str());
       // ... and resubscribe
-      client.subscribe("sensors/");
-      client.subscribe("led/");
+      client.subscribe("plant/pump");
       client.subscribe((String("sensors/")+username+String("/")).c_str());
     } else {
       Serial.print("failed, rc=");
@@ -240,67 +233,36 @@ void reconnect() {
   }
 }
 
-void PirDetection(){
-     if(digitalRead(pirPin) == HIGH){
+char hum[10];
+char temp[10];
 
-       if(lockLow){
-         //makes sure we wait for a transition to LOW before any further output is made:
-         lockLow = false;
-         Serial.println("---");
-         Serial.print("motion detected at ");
-         Serial.print(millis()/1000);
-         Serial.println(" sec");
-         client.publish("alarm/", "{\"sensor\": \"pir\"}"); // MQTT publish alert
-         delay(50);
-         }
-         takeLowTime = true;
-       }
+void sendTemperature(){
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
 
-     if(digitalRead(pirPin) == LOW){
-
-       if(takeLowTime){
-        lowIn = millis();          //save the time of the transition from high to LOW
-        takeLowTime = false;       //make sure this is only done at the start of a LOW phase
-        }
-       //if the sensor is low for more than the given pause,
-       //we assume that no more motion is going to happen
-       if(!lockLow && millis() - lowIn > pause){
-           //makes sure this block of code is only executed again after
-           //a new motion sequence has been detected
-           lockLow = true;
-           Serial.print("motion ended at ");      //output
-           Serial.print((millis() - pause)/1000);
-           Serial.println(" sec");
-           delay(50);
-           }
-       }
-}
-
-bool doorWasOpen = false;
-void DoorDetection(){
-
-  // if door isn't open, we don't need to send anything
-  if(digitalRead(doorPin) == HIGH) {
-    // the door is open
-    long now = millis();
-    if (now - lastMsg > 5000){ // wait 5 seconds before another notification
-      Serial.println("Door is open!");
-      client.publish("alarm/", "{\"sensor\": \"magnetic\", \"door\": \"opened\"}");
-      doorWasOpen = true;
-      lastMsg = now;
-    }
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
   }else{
-    // door is closed
-    if (doorWasOpen){
-      doorWasOpen = false;
-      Serial.println("Door is closed!");
-      client.publish("alarm/", "{\"sensor\": \"magnetic\", \"door\": \"closed\"}");
-    }
+    // Convert to String the values to be sent with mqtt
+    dtostrf(h,4,2,hum);
+    dtostrf(t,4,2,temp);    
   }
 
+    // NB. msg e' definito come un array di 256 caratteri. Aumentare anche all'interno della libreria PubSubClient.h se necessario.
+    sprintf (msg, "{\"humidity\": %s, \"temp_celsius\": %s }", hum, temp); // message formatting
+    Serial.print("Info sent: ");
+    Serial.println(msg);
+    client.publish("plant/humidity", hum, true); // retained message
+    client.publish("plant/temperature", temp, true); // retained message
+
 }
 
-
+ 
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -309,8 +271,13 @@ void loop() {
   }
   client.loop();
 
-  PirDetection(); // start pir detection
-
-  DoorDetection(); // start door detection
-
+  unsigned long now = millis();
+ 
+  if(now - lastMsg > interval) {
+    // save the last time you blinked the LED 
+    lastMsg = now;
+    sendTemperature();
+  }
+  
 }
+
