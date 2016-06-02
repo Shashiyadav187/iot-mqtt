@@ -1,5 +1,7 @@
 var mosca = require('mosca');
 var auth = require('./auth_functions.js'); // funzioni di autenticazione e autorizzazione
+var path = require('path');
+
 
 // Il broker MQTT gira sulla macchina corrente, sulla porta 1883, mentre l'impostazione http, fa si che si apra un server WebSocket per l'interazione da Web browser sulla porta 3000.
 
@@ -18,7 +20,7 @@ var settings = {
 
 var server = new mosca.Server(settings);
 
-var db = new mosca.persistence.LevelUp({ path: './db_levelup' }); // DB storing retained messages
+var db = new mosca.persistence.LevelUp({ path: path.join(__dirname, './db_levelup') }); // DB storing retained messages
 db.wire(server);
 
 var auth_required = auth.credentials.auth_required; // se true necessario LOGGARSI
