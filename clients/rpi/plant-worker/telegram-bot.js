@@ -10,7 +10,7 @@ var TelegramBot = require('node-telegram-bot-api');
 var jsonfile = require('jsonfile');
 var path = require('path');
 var mqttClient = require('./mqtt-client.js');
-var config = require('config.json');
+var config = require('./config.json');
 //var mail = require('./components/mailgun.js');
 
 if(!config) throw new Error('config.json file missing!');
