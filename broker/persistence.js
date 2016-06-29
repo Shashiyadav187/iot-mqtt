@@ -10,6 +10,7 @@ function Layer(config){
     // Layer class
     Object.keys(layers).forEach(function(key){
       if (!(key in config)) delete layers[key];
+      if (config[key] === false) delete layers[key];
     });
 
     this.on('store', function(obj) {
@@ -20,11 +21,12 @@ function Layer(config){
 
 }
 
+util.inherits(Layer, EventEmitter);
+
 Layer.prototype.store = function(obj) {
     this.emit('store', obj);
 };
 
-util.inherits(Layer, EventEmitter);
 
 module.exports = function(desired_layers){
   return new Layer(desired_layers);
