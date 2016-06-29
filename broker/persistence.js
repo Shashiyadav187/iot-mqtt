@@ -44,6 +44,6 @@ var layers = {
     data[obj.channel] = obj.payload;
     data.api_key = persistenceConfig.thingspeakAPIKEY;
     request.post('https://api.thingspeak.com/update', {form:data});
-    console.log('Data sent to ThinkSpeak: '+data);
+    console.log('Data sent to ThinkSpeak:', data);
   }
 };
