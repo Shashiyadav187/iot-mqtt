@@ -31,6 +31,7 @@ module.exports = function(desired_layers){
 };
 
 var layers = {
+  // store layers
   nedb: function(obj){
     db.insert(obj, function (err, newDoc) {
       console.log('Data stored:', newDoc);

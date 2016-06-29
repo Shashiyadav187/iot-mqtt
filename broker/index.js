@@ -2,7 +2,7 @@ var mosca = require('mosca');
 var auth = require('./auth_functions.js'); // funzioni di autenticazione e autorizzazione
 var path = require('path');
 var persistence = require('./persistence')({
-  nedb: true,
+  nedb: false,
   thingspeak: true
 });
 
