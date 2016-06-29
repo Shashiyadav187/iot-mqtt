@@ -36,7 +36,7 @@ var layers = {
   // store layers
   nedb: function(obj){
     db.insert(obj, function (err, newDoc) {
-      console.log('Data stored:', newDoc);
+      console.log('NEDB, data stored:', newDoc);
     });
   },
   thingspeak: function(obj){
@@ -44,5 +44,6 @@ var layers = {
     data[obj.channel] = obj.payload;
     data.api_key = persistenceConfig.thingspeakAPIKEY;
     request.post('https://api.thingspeak.com/update', {form:data});
+    console.log('Data sent to ThinkSpeak: '+data);
   }
 };
