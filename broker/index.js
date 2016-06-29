@@ -1,6 +1,10 @@
 var mosca = require('mosca');
 var auth = require('./auth_functions.js'); // funzioni di autenticazione e autorizzazione
 var path = require('path');
+var persistence = require('./persistence')({
+  nedb: true,
+  thingspeak: true
+});
 
 
 // Il broker MQTT gira sulla macchina corrente, sulla porta 1883, mentre l'impostazione http, fa si che si apra un server WebSocket per l'interazione da Web browser sulla porta 3000.
@@ -37,13 +41,15 @@ server.on('clientDisconnected', function(client) {
 
 // fired when a message is received
 server.on('published', function(packet, client) {
-	
+
 	if (packet.topic.indexOf('$SYS') == -1){ // non stampiamo i messaggi 'di sistema'
 		console.log('Published - Messaggio:\n', packet); // packet.payload.toString('utf8')
-		if (client !== null)
-			console.log('Client:', client.id);
+		if (client !== null){
+      console.log('Client:', client.id);
+      persistence.store({sender: client.id, payload: packet.payload.toString('utf8'), channel: packet.topic});
+    }
 	}
-	
+
 });
 
 // fired when a client subscribes to a topic
