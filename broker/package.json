@@ -10,7 +10,7 @@
   "author": "Rocco Musolino",
   "license": "ISC",
   "dependencies": {
-    "mosca": "^0.32.1",
+    "mosca": "^2.0.1",
     "mqtt": "^1.4.3",
     "nedb": "^1.8.0",
     "request": "^2.72.0"
