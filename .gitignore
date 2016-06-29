@@ -2,3 +2,5 @@ broker/node_modules/
 clients/pc/node-client/node_modules/
 broker/db_levelup/
 clients/rpi/plant-worker/node_modules/
+broker/IncomingData.db
+broker/persistenceConfig.json
